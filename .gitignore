@@ -1,0 +1,12 @@
+**/.DS_Store
+/bin/
+/.gradle/
+/build/
+.claude/
+/ui-flake/
+.idea/
+*.iml
+.vscode/
+.env
+*.p12
+*.pem

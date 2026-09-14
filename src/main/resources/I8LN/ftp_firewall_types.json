@@ -1,0 +1,62 @@
+[
+  {
+    "id": "FTP_1", "label": "Type 1",
+    "description": "Send “USER user@real.hostname”.",
+    "usesUser": false, "usesPassword": false,
+    "steps": ["USER %user@%host", "PASS %pass"]
+  },
+  {
+    "id": "FTP_2", "label": "Type 2",
+    "description": "Login to firewall with “USER fwuser” and “PASS fwpass”, then “USER user@real.hostname”.",
+    "usesUser": true, "usesPassword": true,
+    "steps": ["USER %fwuser", "PASS %fwpass", "USER %user@%host", "PASS %pass"]
+  },
+  {
+    "id": "FTP_3", "label": "Type 3",
+    "description": "Use “SITE real.hostname”, followed by the regular USER and PASS.",
+    "usesUser": false, "usesPassword": false,
+    "steps": ["SITE %host", "USER %user", "PASS %pass"]
+  },
+  {
+    "id": "FTP_4", "label": "Type 4",
+    "description": "Use “OPEN real.hostname”, followed by the regular USER and PASS.",
+    "usesUser": false, "usesPassword": false,
+    "steps": ["OPEN %host", "USER %user", "PASS %pass"]
+  },
+  {
+    "id": "FTP_5", "label": "Type 5",
+    "description": "Send “USER user@fwuser@real.hostname” and “PASS pass@fwpass”.",
+    "usesUser": true, "usesPassword": true,
+    "steps": ["USER %user@%fwuser@%host", "PASS %pass@%fwpass"]
+  },
+  {
+    "id": "FTP_6", "label": "Type 6",
+    "description": "Send “USER fwuser@real.hostname” and “PASS fwpass”, followed by “USER user” and “PASS pass”.",
+    "usesUser": true, "usesPassword": true,
+    "steps": ["USER %fwuser@%host", "PASS %fwpass", "USER %user", "PASS %pass"]
+  },
+  {
+    "id": "FTP_7", "label": "Type 7",
+    "description": "Send “USER user@real.hostname fwuser” and “PASS pass”, followed by “ACCT fwpass”.",
+    "usesUser": true, "usesPassword": true,
+    "steps": ["USER %user@%host %fwuser", "PASS %pass", "ACCT %fwpass"]
+  },
+  {
+    "id": "FTP_8", "label": "Type 8",
+    "description": "Send “USER user@real.hostname:port”, followed by “PASS pass”.",
+    "usesUser": false, "usesPassword": false,
+    "steps": ["USER %user@%host:%port", "PASS %pass"]
+  },
+  {
+    "id": "FTP_9", "label": "Type 9",
+    "description": "Send “USER user@real.hostname port”, followed by “PASS pass”.",
+    "usesUser": false, "usesPassword": false,
+    "steps": ["USER %user@%host %port", "PASS %pass"]
+  },
+  {
+    "id": "FTP_10", "label": "Type 10",
+    "description": "Send “USER user@fwuser@hostname”.",
+    "usesUser": true, "usesPassword": false,
+    "steps": ["USER %user@%fwuser@%host", "PASS %pass"]
+  }
+]

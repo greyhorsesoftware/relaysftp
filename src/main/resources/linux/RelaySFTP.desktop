@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=RelaySFTP
+Comment=FTP/SFTP/S3 File Transfer Client
+Exec=RelaySFTP
+Icon=RelaySFTP
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;
+StartupWMClass=RelaySFTP
