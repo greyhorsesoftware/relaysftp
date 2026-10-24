@@ -90,6 +90,7 @@ public class GUIAction extends AbstractAction implements GValidationInterface
     public  final   static  int GA_EXPORT_DIAGNOSTICS    = 56;
     public  final   static  int GA_NEW_FILE              = 58;
     public  final   static  int GA_SET_HOME_FOLDER       = 59;
+    public  final   static  int GA_TOGGLE_DOTFILES       = 60;
 
     /**
     * Gideon Action Type Code
@@ -412,6 +413,17 @@ public class GUIAction extends AbstractAction implements GValidationInterface
                 brw.refresh(null);
 
             break;
+
+            case GA_TOGGLE_DOTFILES:
+
+                // dotfiles are filtered when a listing is parsed, so re-list every pane in every window
+                GSFTPPreferences.setShowDotFiles( !GSFTPPreferences.showDotFiles() );
+                for( GBrowserWindow w : theManager.getBrowserWindows() )
+                {
+                    w.refreshAllBrowsers();
+                }
+
+            break;
             
             case GA_NEW_CONNECTION:
             
@@ -704,6 +716,13 @@ public class GUIAction extends AbstractAction implements GValidationInterface
         if( !(keyWindow instanceof GBrowserWindow ) )
         {
             return false;
+        }
+
+        if( gideonActionCode == GA_TOGGLE_DOTFILES )
+        {
+            // each window has its own menu bar, so sync the check mark with the shared preference
+            putValue(Action.SELECTED_KEY, GSFTPPreferences.showDotFiles());
+            return true;
         }
         
 		if( gideonActionCode == GA_FOLLOWME )

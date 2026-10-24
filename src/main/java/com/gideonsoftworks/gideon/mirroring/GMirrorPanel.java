@@ -642,7 +642,6 @@ public class GMirrorPanel extends JPanel
         sorter = new TableRowSorter<>( tableModel );
         reviewTable.setRowSorter( sorter );
         reviewTable.getColumnModel().getColumn( 0 ).setMaxWidth( 34 );
-        reviewTable.getColumnModel().getColumn( 1 ).setMaxWidth( 130 );
         reviewTable.getColumnModel().getColumn( 3 ).setMaxWidth( 90 );
 
         reviewSummary = new JLabel( "", JLabel.CENTER );
@@ -696,6 +695,7 @@ public class GMirrorPanel extends JPanel
         for( GMirrorAction a : plan.actions() )
             rows.add( new MirrorRow( a, a.type != GMirrorAction.Type.SKIP ) );  // actionable rows selected by default
         tableModel.setRows( rows );
+        fitColumn( reviewTable, 1 );   // Operation always shows its whole label
         sorter.setRowFilter( null );
         updateSummary();
     }
@@ -757,6 +757,8 @@ public class GMirrorPanel extends JPanel
         runBar.setIndeterminate( true );
         runDetail.setText( "Starting…" );
         runModel.setState( runState );
+        fitColumn( runTable, 0 );   // Operation and Status always show their whole text
+        fitColumn( runTable, 3 );
         updateRunningProgress();
         setRunButtons( true );
         showCard( "running" );
@@ -821,10 +823,7 @@ public class GMirrorPanel extends JPanel
         runTable.setFocusable( false );          // a read-only progress view: no selection or focus highlight
         runTable.setShowGrid( false );
         runTable.setRowHeight( runTable.getRowHeight() + 6 );
-        runTable.getColumnModel().getColumn( 0 ).setMaxWidth( 140 );
         runTable.getColumnModel().getColumn( 2 ).setMaxWidth( 80 );
-        runTable.getColumnModel().getColumn( 3 ).setPreferredWidth( 240 );
-        runTable.getColumnModel().getColumn( 3 ).setMaxWidth( 300 );
         RunTextRenderer text = new RunTextRenderer( runModel );
         for( int c = 0; c < 3; c++ ) runTable.getColumnModel().getColumn( c ).setCellRenderer( text );
         runTable.getColumnModel().getColumn( 2 ).setCellRenderer( new RunTextRenderer( runModel ) { { setHorizontalAlignment( RIGHT ); } } );
@@ -1477,6 +1476,40 @@ public class GMirrorPanel extends JPanel
         }
     }
 
+    // ---- column sizing: Operation / Status never truncate; Path takes what's left ----
+
+    /** Fix a column to the width of its widest cell or header. */
+    private static void fitColumn( JTable t, int col )
+    {
+        javax.swing.table.TableColumn c = t.getColumnModel().getColumn( col );
+        TableCellRenderer hr = t.getTableHeader().getDefaultRenderer();
+        int w = hr.getTableCellRendererComponent( t, c.getHeaderValue(), false, false, -1, col ).getPreferredSize().width;
+        for( int r = 0; r < t.getRowCount(); r++ ) w = Math.max( w, cellWidth( t, r, col ) );
+        setColumnWidth( c, w );
+    }
+
+    /** Widen a column (never narrow it) if one row's cell no longer fits. */
+    private static void growColumn( JTable t, int col, int modelRow )
+    {
+        javax.swing.table.TableColumn c = t.getColumnModel().getColumn( col );
+        int w = cellWidth( t, t.convertRowIndexToView( modelRow ), col );
+        if( w > c.getWidth() ) setColumnWidth( c, w );
+    }
+
+    private static int cellWidth( JTable t, int row, int col )
+    {
+        Component r = t.prepareRenderer( t.getCellRenderer( row, col ), row, col );
+        return r.getPreferredSize().width + t.getIntercellSpacing().width + 8;
+    }
+
+    private static void setColumnWidth( javax.swing.table.TableColumn c, int w )
+    {
+        c.setMinWidth( 0 );
+        c.setMaxWidth( w );
+        c.setMinWidth( w );
+        c.setPreferredWidth( w );
+    }
+
     // ---- Running card: table over the run state (plan §3.5) ----
 
     /**
@@ -1546,7 +1579,7 @@ public class GMirrorPanel extends JPanel
             for( int i = 0; i < shown.length; i++ )
             {
                 RunStatus now = RunStatus.of( state, i );
-                if( !now.equals( shown[i] ) ) { shown[i] = now; fireTableRowsUpdated( i, i ); }
+                if( !now.equals( shown[i] ) ) { shown[i] = now; fireTableRowsUpdated( i, i ); growColumn( runTable, 3, i ); }
             }
         }
 

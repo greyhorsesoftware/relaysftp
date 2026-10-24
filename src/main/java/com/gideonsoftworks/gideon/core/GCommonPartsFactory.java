@@ -331,6 +331,10 @@ public class GCommonPartsFactory {
         mi.setAccelerator( KeyStroke.getKeyStroke(KeyEvent.VK_R, shortcutKeyMask ) );
         toolbarActions.put(GLocalized.TB_REFRESH, action);
 
+        // Finder's show/hide invisible files shortcut (cmd-shift-.); bare "." is bound on the file tables
+        fMenu.add( mi = new JCheckBoxMenuItem( new GUIAction( GLocalized.SHOW_HIDDEN_FILES, null, GUIAction.GA_TOGGLE_DOTFILES ) ) );
+        mi.setAccelerator( KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD, shortcutKeyMask | KeyEvent.SHIFT_DOWN_MASK ) );
+
         fMenu.add( mi = new JMenuItem( action=new GCloseTabDisconnectUIAction( GLocalized.DISCONNECT, GLocalized.DISCONNECT_ICON, GUIAction.GA_DISCONNECT ) ) );
         mi.setIcon(null);
         mi.setAccelerator( KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD, shortcutKeyMask ) );

@@ -419,7 +419,9 @@ public class GEditorWindow extends GFrame implements UndoableEditListener {
             overlayPanel = new JPanel(new GridBagLayout()) {
                 @Override
                 protected void paintComponent(Graphics g) {
-                    g.setColor(new Color(255, 255, 255, 180));
+                    // dim with the theme's background rather than bleaching the window white
+                    Color bg = UIManager.getColor("Panel.background");
+                    g.setColor(new Color(bg.getRed(), bg.getGreen(), bg.getBlue(), 140));
                     g.fillRect(0, 0, getWidth(), getHeight());
                     super.paintComponent(g);
                 }
@@ -428,9 +430,13 @@ public class GEditorWindow extends GFrame implements UndoableEditListener {
         }
         overlayPanel.removeAll();
 
+        // solid card so the message stays readable on any theme
         JPanel inner = new JPanel();
         inner.setLayout(new BoxLayout(inner, BoxLayout.Y_AXIS));
-        inner.setOpaque(false);
+        inner.setBackground(UIManager.getColor("Panel.background"));
+        inner.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(UIManager.getColor("Component.borderColor")),
+            BorderFactory.createEmptyBorder(16, 24, 16, 24)));
 
         JProgressBar spinner = new JProgressBar();
         spinner.setIndeterminate(true);

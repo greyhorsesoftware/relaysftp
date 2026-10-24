@@ -502,6 +502,7 @@ abstract class UITestBase {
             }
         }, 20_000);
         robot.waitForIdle();
+        assertColumnShowsWholeText(findByName(JTable.class, "mirrorReviewTable"), 1);   // Operation
     }
 
     /** Return to the Configure card from Review (so a detector/option can be changed and re-run). */
@@ -530,12 +531,28 @@ abstract class UITestBase {
      * that job to complete, and return the Running card's Done summary (e.g. "2 copied · 0 deleted …").
      * The mirror runs on a background virtual thread, so we sync on the job-manager completion event.
      */
+    /** Every cell in the column fits its width (no "…" truncation). */
+    static void assertColumnShowsWholeText(JTable t, int col) {
+        GuiActionRunner.execute(() -> {
+            int width = t.getColumnModel().getColumn(col).getWidth();
+            for (int r = 0; r < t.getRowCount(); r++) {
+                int need = t.prepareRenderer(t.getCellRenderer(r, col), r, col).getPreferredSize().width;
+                Assertions.assertTrue(need <= width, t.getName() + " column " + col + " row " + r
+                    + " needs " + need + "px but has " + width + "px: " + t.getValueAt(r, col));
+            }
+            return null;
+        });
+    }
+
     String mirrorExecuteAndWaitForCompletion() throws Exception {
         JButton mb = findByName(JButton.class, "mirrorButton");
         JobWaiter waiter = waitForJob(GJobDescription.MIRROR_JOB_TYPE);
         SwingUtilities.invokeAndWait(mb::doClick);
         waiter.await(30);
         robot.waitForIdle();   // let the EDT process the completion event + update the card
+        JTable run = findByName(JTable.class, "mirrorRunTable");
+        assertColumnShowsWholeText(run, 0);   // Operation
+        assertColumnShowsWholeText(run, 3);   // Status
         JLabel detail = findByName(JLabel.class, "mirrorRunDetail");
         return detail != null ? detail.getText() : "";
     }

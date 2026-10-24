@@ -438,6 +438,24 @@ public class GFrame extends JFrame implements WindowListener, ComponentListener,
 	}
 	
 	/**
+        Called to get every tab in the window, in tab order
+        @return list of tab items (empty if the window has no tabs)
+    */
+	public java.util.List<GTabBarItem> getTabs()
+	{
+		java.util.List<GTabBarItem> tabs = new ArrayList<GTabBarItem>();
+		JTabbedPane pane = getTabbedPane();
+		if( pane == null ) return tabs;
+
+		for( int i = 0 ; i < pane.getTabCount() ; i++ )
+		{
+			GTabBarItem tab = (GTabBarItem)viewToTab.get(pane.getComponentAt(i));
+			if( tab != null ) tabs.add(tab);
+		}
+		return tabs;
+	}
+
+	/**
         Called to set the current tab info
 		@param tabItem tab item
     */
@@ -575,25 +593,27 @@ public class GFrame extends JFrame implements WindowListener, ComponentListener,
 		
         if(eventCode==WindowEvent.WINDOW_CLOSING )
         {
-        
+
+            // is this window has a job manager
+            // make sure no jobs are running and warn the user.
+            // ask before windowWillClose() - subclasses tear down there (e.g. the browser reaps its connections)
+            if( getJobManager() != null && getJobManager().hasRunningJobs() )
+            {
+                int rep=JOptionPane.showConfirmDialog(null, GLocalized.SURE_YOU_WANT_TO_CLOSE_MSG, GLocalized.SURE_YOU_WANT_TO_CLOSE_TITLE,  JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+                if( rep != JOptionPane.YES_OPTION )
+                {
+                    return;
+                }
+            }
+
             if(!windowWillClose())
             {
 				return;
             }
 
-            // is this window has a job manager
-            // make sure no jobs are running and warn the user.
             if( getJobManager() != null )
             {
-                if( getJobManager().hasRunningJobs() )
-                {
-                    int rep=JOptionPane.showConfirmDialog(null, GLocalized.SURE_YOU_WANT_TO_CLOSE_MSG, GLocalized.SURE_YOU_WANT_TO_CLOSE_TITLE,  JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE); 
-                    
-                    if( rep == JOptionPane.NO_OPTION )
-                    {
-                        return;
-                    }
-                }
                 // tell the job manager to shut down stopping any jobs in progress.
                 getJobManager().shutdown( GAppShutdown.JOIN_BUDGET_MS );
             }
