@@ -452,16 +452,26 @@ public class GBrowserWindow extends GFrame implements FocusListener, GBrowserWin
 	*	This method is silly. it does alot of the same work the connection set manager callbacks do.
 	*
     */
-    public void tabWillClose( HashMap tabInfo )
+    @Override
+    public void tabWillClose( final GTabBarItem tab )
     {
-				
-		GConnectionSet	cs = (GConnectionSet)tabInfo.get(GBrowserWindow.CONNECTION_SET);
-		
-		if(cs == null)
-		{
-			throw	new NullPointerException("tabWillClose - connection set is null");
-		}
-		
+
+		GConnectionSet	cs = (GConnectionSet)tab.getAttribute(GBrowserWindow.CONNECTION_SET);
+
+		// custom tabs (e.g. Jobs) don't have a connection set
+		if(cs == null) return;
+
+        // stop the panes' pollers and drop their listeners - a ping or mtime poll on a reaped
+        // connection would log it straight back in
+        for( String key : new String[]{ LOCAL_BROWSER_KEY, REMOTE_BROWSER_KEY } )
+        {
+            if( !(tab.getAttribute(key) instanceof GBrowserPanelController b) ) continue;
+
+            b.bwl_browserClosing( this );
+            b.removeBrowserPanelListener( this );
+            removeBrowserWindowListener( b );
+        }
+
         // remove the connection set from the connection set manager
         // w/o notifying listeners or auto assigning a new key one
         // we handle that below.
@@ -929,6 +939,27 @@ public class GBrowserWindow extends GFrame implements FocusListener, GBrowserWin
 		
     }
     
+    /**
+        Re-list every pane in every tab - used when a listing preference (show dotfiles) changes.
+        Disconnected remote panes are skipped so the refresh doesn't log them back in.
+    */
+    public  void    refreshAllBrowsers()
+    {
+        for( GTabBarItem tab : getTabs() )
+        {
+            for( String key : new String[]{ LOCAL_BROWSER_KEY, REMOTE_BROWSER_KEY } )
+            {
+                if( !(tab.getAttribute(key) instanceof GBrowserPanelController b) ) continue;
+
+                GConnection con = b.getConnection();
+                try { if( con == null || !con.getIsConnected() ) continue; }
+                catch( GConnectionException e ) { continue; }
+
+                b.refresh(null);
+            }
+        }
+    }
+
     public  GBrowserPanelCommandInterface getLocalBrowser()
     {
 		

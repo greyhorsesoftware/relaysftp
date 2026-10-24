@@ -60,11 +60,10 @@ public class GBrowserPanelController extends GGideonPanelController implements G
     
     // Browser Panel
     private     JPanel              fivBrowserPanel=null;
-    private     JComboBox           fivPathSelector;
+    private     GBreadcrumbBar      fivBreadcrumbBar;
+    private     GFileItem           gbpPendingOpenItem = null;   // double-clicked on press, opened on release
     private     JTable              fivFileTable;
     private     JLabel              fileCountField;
-    private     JButton             backButton;
-    private     JButton             reloadButton;
 
     // Permission Settings Panel
     
@@ -99,76 +98,6 @@ public class GBrowserPanelController extends GGideonPanelController implements G
     public		boolean					fConfiguredTable = false;
     private             boolean                                 initialWidthNotSet = true;
         
-    /**
-    *
-    * This class makes the path selector pretty by adding a nice folder image to the left
-    *
-    *
-    */
-     class GPathComboBoxRenderer extends JLabel implements ListCellRenderer {
-
-        public GPathComboBoxRenderer() {
-            setOpaque(true);
-        }
-
-        /*
-         * This method finds the image and text corresponding
-         * to the selected value and returns the label, set up
-         * to display the text and image.
-         */
-        public Component getListCellRendererComponent(
-                                           JList list,
-                                           Object value,
-                                           int index,
-                                           boolean isSelected,
-                                           boolean cellHasFocus) {
-            
-            if( value == null ) return this;
-            
-            if (isSelected) {
-            
-                setBackground(list.getSelectionBackground());
-                setForeground(list.getSelectionForeground());
-                
-                if( ((GFileItem)value).getIsMyComputer() )
-                {
-                    setIcon(GLocalized.SMALL_MYCOMPUTER_ICON);
-                }else if( ((GFileItem)value).getIsHardDrive() )
-                {
-                    setIcon(GLocalized.SMALL_HD_ICON);
-                }else if( ((GFileItem)value).getIsDesktop() )
-                {
-                    setIcon(GLocalized.DESKTOP_SMALL_ICON );
-                }else{
-                    setIcon(GLocalized.SMALL_FOLDER_ICON);
-                }
-            
-            } else {
-                setBackground(list.getBackground());
-                setForeground(list.getForeground());
-                
-                if( ((GFileItem)value).getIsMyComputer() )
-                {
-                    setIcon(GLocalized.SMALL_MYCOMPUTER_ICON);
-                }else if( ((GFileItem)value).getIsHardDrive() )
-                {
-                    setIcon(GLocalized.SMALL_HD_ICON);
-                }else if( ((GFileItem)value).getIsDesktop() )
-                {
-                    setIcon(GLocalized.DESKTOP_SMALL_ICON);
-                }else{
-                    setIcon(GLocalized.SMALL_FOLDER_ICON);
-                }
- 
-            }
- 
-            setText(value.toString());
-
-            return this;
-        }
-
-    }
-    
 	class GNameComparator implements Comparator
 	{
         public int compare( Object a, Object b )
@@ -248,52 +177,11 @@ public class GBrowserPanelController extends GGideonPanelController implements G
         // Build the browser panel by hand (replaces GBrowserPanel.gui_xml)
         fivBrowserPanel = new JPanel(new BorderLayout(0, 6));
 
-        // Toolbar row: back, reload, path selector, search field
-        JPanel toolRow = new JPanel(new BorderLayout(4, 0));
-        toolRow.setBorder(BorderFactory.createEmptyBorder(4, 8, 2, 8));
-
-        backButton = new JButton();
-        backButton.setIcon(GLocalized.PWD_ICON);
-        backButton.setToolTipText("Back");
-        backButton.setFocusable(false);
-        backButton.addActionListener(this);
-        backButton.putClientProperty("JButton.buttonType", "roundRect");
-        backButton.setMargin(new Insets(4, 6, 4, 6));
-
-        reloadButton = new JButton();
-        reloadButton.setIcon(GLocalized.RELOAD_SM_ICON);
-        reloadButton.setToolTipText("Reload");
-        reloadButton.setFocusable(false);
-        reloadButton.addActionListener(this);
-        reloadButton.putClientProperty("JButton.buttonType", "roundRect");
-        reloadButton.setMargin(new Insets(4, 6, 4, 6));
-
-        JButton favoritesButton = new JButton();
-        favoritesButton.setIcon(GLocalized.FAVORITES_ICON);
-        favoritesButton.setToolTipText("Favorites");
-        favoritesButton.setFocusable(false);
-        favoritesButton.putClientProperty("JButton.buttonType", "roundRect");
-        favoritesButton.setMargin(new Insets(4, 6, 4, 6));
-        favoritesButton.addActionListener(e -> showFavoritesPopup(favoritesButton));
-
-        JPanel navButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
-        navButtons.add(backButton);
-        navButtons.add(reloadButton);
-        navButtons.add(favoritesButton);
-        toolRow.add(navButtons, BorderLayout.WEST);
-
-        fivPathSelector = new JComboBox();
-        fivPathSelector.setFocusable(false);
-        fivPathSelector.setEditable(false);
-        fivPathSelector.addActionListener(this);
-        fivPathSelector.putClientProperty("JComponent.roundRect", true);
-        flattenComboArrow(fivPathSelector);
-        GPathComboBoxRenderer renderer= new GPathComboBoxRenderer();
-        fivPathSelector.setRenderer(renderer);
-        toolRow.add(fivPathSelector, BorderLayout.CENTER);
-
-
-        fivBrowserPanel.add(toolRow, BorderLayout.NORTH);
+        // Path bar: breadcrumbs for the current folder
+        fivBreadcrumbBar = new GBreadcrumbBar(this::breadcrumbSelected);
+        // 8px above the pills, matching the 2px + 6px layout gap below them
+        fivBreadcrumbBar.setBorder(BorderFactory.createEmptyBorder(8, 8, 2, 8));
+        fivBrowserPanel.add(fivBreadcrumbBar, BorderLayout.NORTH);
 
         // File table in scroll pane
         fivFileTable = new GTable();
@@ -309,6 +197,18 @@ public class GBrowserPanelController extends GGideonPanelController implements G
         fivFileTable.setShowVerticalLines( false );
         fivFileTable.getSelectionModel().addListSelectionListener((ListSelectionListener)this);
         fivFileTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
+
+        // "." toggles hidden files while the table has focus (cmd-shift-. lives on the Special menu)
+        fivFileTable.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke('.'), "toggleDotFiles");
+        fivFileTable.getActionMap().put("toggleDotFiles",
+            new com.gideonsoftworks.gideon.actions.GUIAction(GLocalized.SHOW_HIDDEN_FILES, null,
+                com.gideonsoftworks.gideon.actions.GUIAction.GA_TOGGLE_DOTFILES));
+
+        // "r" refreshes this pane while the table has focus (cmd-R lives on the Special menu)
+        fivFileTable.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke('r'), "refreshPane");
+        fivFileTable.getActionMap().put("refreshPane", new AbstractAction() {
+            public void actionPerformed( ActionEvent e ) { refresh( null ); }
+        });
 
         JScrollPane fileScrollPane = new JScrollPane(fivFileTable,
             JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
@@ -1183,52 +1083,29 @@ public void handlePingTimer( boolean connected )
 */
 private void    updateButtonAndDropDown()
 {
-    GFileItem   pFi = null;
-    GFileItem   fi  = this.getVirtualCWD(); 
-    
+    GFileItem   fi  = this.getVirtualCWD();
+
     if( fi==null )
     {
-        
+
         throw new NullPointerException("GBrowserControlPanel updateButtonAndDropDown : virtual cwd was null"); 
     
     }
     
-    if( fi.getParentFileItem() == null )
+    // breadcrumbs run from the top of the path down to the virtualCWD
+    // skip "Computer" node for remote connections
+    List<GFileItem> path = new ArrayList<GFileItem>();
+    boolean isRemote = getConnection() != null && getConnection().getIsRemote();
+
+    for( GFileItem pFi = fi ; pFi != null ; pFi = pFi.getParentFileItem() )
     {
-        backButton.setEnabled(false);
-    }else{
-        backButton.setEnabled(true);
-    }
-    
-    // create an entry in the path selector for 
-    // each parent item - starting at the virtualCWD.
-    
-    fivPathSelector.removeAllItems();
-    
-    fi = this.getVirtualCWD();
-    
-    // if we have a file item init it
-    if( fi != null )
-    {
-        // add current item
-        fivPathSelector.addItem(fi);
-        
-        // init parent file item
-        pFi = fi.getParentFileItem();
-        
-        // for each parent add — skip "Computer" node for remote connections
-        boolean isRemote = getConnection() != null && getConnection().getIsRemote();
-        while( pFi != null )
+        if( !(isRemote && pFi.getIsMyComputer()) )
         {
-            if( !(isRemote && pFi.getIsMyComputer()) )
-            {
-                fivPathSelector.addItem(pFi);
-            }
-            pFi = pFi.getParentFileItem();
+            path.add(0, pFi);
         }
-    }else{
-        fivPathSelector.setEnabled(false);
     }
+
+    fivBreadcrumbBar.setPath(path, isRemote);
     
     /* Secured icon moved to status panel controller ( 6/25/05 )
     // update secure lock
@@ -1245,49 +1122,22 @@ private void    updateButtonAndDropDown()
 *
 *
 */
+private void breadcrumbSelected( final GFileItem sItem )
+{
+    // ignore selecting the current fso
+    if( sItem.equals(this.getVirtualCWD()) ) return;
+
+    // clear the selection
+    fivFileTable.getSelectionModel().clearSelection();
+
+    changeToFolder(sItem);
+}
+
 public void actionPerformed( ActionEvent e )
 {
     int flag = 0;
     
-    if( e.getSource().equals(backButton) )
-    {
-		
-		goToParentFolder();
-		
-		if( GideonConfiguration.FOLLOWMEENABLED )
-		{
-			GGideonPanelController  cnt = getBuddy();
-			if( cnt instanceof GBrowserPanelController )
-			{
-				((GBrowserPanelController)cnt).goToParentFolder();
-			}
-		}
-        
-    }else if( e.getSource().equals(reloadButton) )
-    {
-		
-        refresh( null );
-    
-    }else if( e.getSource().equals(fivPathSelector) )
-    {
-            
-            
-        GFileItem sItem = (GFileItem)fivPathSelector.getSelectedItem();
-            
-        if( sItem == null ) return;
-            
-        // ignore selecting the current fso
-        if( sItem.equals(this.getVirtualCWD()) )
-        {
-            return;
-        }
-        
-		// clear the selection
-		fivFileTable.getSelectionModel().clearSelection();
-				    
-        changeToFolder(sItem);
-        
-    }else if( bpwPingTimer !=null && e.getSource().equals(bpwPingTimer) )
+    if( bpwPingTimer !=null && e.getSource().equals(bpwPingTimer) )
     {
         ping();
     }
@@ -2068,43 +1918,6 @@ public GDataArray getFavoriteFolderList()
     return bm.getFavoritePaths();
 }
 
-private void showFavoritesPopup(JButton source)
-{
-    GDataArray favItems = getFavoriteFolderList();
-    JPopupMenu menu = new JPopupMenu();
-
-    int count = (favItems != null) ? favItems.getItemCount() : 0;
-
-    if( count == 0 )
-    {
-        JMenuItem empty = new JMenuItem(GLocalized.NOFAVORITES);
-        empty.setEnabled(false);
-        menu.add(empty);
-    }else{
-        for( int i = 0 ; i < count ; i++ )
-        {
-            GBookmarkFavoritePath cItem = (GBookmarkFavoritePath)favItems.getItemAtIndex(i);
-            String name = (String)cItem.getObjectForKey(GBookmarkFavoritePath.FAVORITE_NAME);
-            String path = (String)cItem.getObjectForKey(GBookmarkFavoritePath.FAVORITE_PATH);
-            JMenuItem mi = new JMenuItem(name);
-            mi.addActionListener(e -> {
-                if( hasLocalSelection() )
-                {
-                    changeToFolder(buildLocalFileItemWithParents(new java.io.File(path)));
-                }else{
-                    String folderName = GStringUtilities.getLastPathComponent(path);
-                    GFileItem remoteFolder = new GFileItem(folderName, path, getConnection());
-                    remoteFolder.setFileType(GFileItem.G_FOLDER);
-                    changeToFolder(remoteFolder);
-                }
-            });
-            menu.add(mi);
-        }
-    }
-
-    menu.show(source, 0, source.getHeight());
-}
-
 /**
  * Build a GFileItem for a local File, reusing cached items from
  * the existing tree where possible. Only creates new GFileItems
@@ -2162,21 +1975,6 @@ static GFileItem buildLocalFileItemWithParents(java.io.File file, GFileItem tree
         }
     }
     return current;
-}
-
-/** Convenience: build with parent chain using this panel's tree root. */
-GFileItem buildLocalFileItemWithParents(java.io.File file)
-{
-    // Walk up from CWD to find the tree root
-    GFileItem root = getVirtualCWD();
-    if( root != null )
-    {
-        while( root.getParentFileItem() != null )
-        {
-            root = root.getParentFileItem();
-        }
-    }
-    return buildLocalFileItemWithParents(file, root);
 }
 
 /*
@@ -2469,18 +2267,8 @@ public  void    mousePressed( MouseEvent e )
                 System.out.println("User double clicked : \"" + selectedItem.getName() + "\" id : \"" + selectedItem.hashCode() + "\"");
                 
             }
-            // handle processing of the special "change to parent" GFileItem
-            if( selectedItem.getIsCDUP() )
-            {
-                this.goToParentFolder();
-            
-            // if it's listable - list it.
-            }else if( selectedItem.getIsListable() )
-            {
-                this.changeToFolder(selectedItem);
-            }else{
-                ((GBrowserWindowCommandInterface)getDelegate()).userDoubleClickedFile(selectedItem);
-            }
+            // open it on release (see mouseReleased)
+            gbpPendingOpenItem = selectedItem;
             
         }
         
@@ -2507,6 +2295,26 @@ public  void    mouseReleased( MouseEvent e )
 {
 
     evaluatePopup(e);
+
+    // a double-click opens on release, not press: opening a cached folder swaps the table rows
+    // at once, and the table UI then applies the press-time row index on release - past the end
+    // of the new, shorter listing (ArrayIndexOutOfBounds in the row sorter)
+    GFileItem item = gbpPendingOpenItem;
+    gbpPendingOpenItem = null;
+    if( item == null ) return;
+
+    // handle processing of the special "change to parent" GFileItem
+    if( item.getIsCDUP() )
+    {
+        this.goToParentFolder();
+
+    // if it's listable - list it.
+    }else if( item.getIsListable() )
+    {
+        this.changeToFolder(item);
+    }else{
+        ((GBrowserWindowCommandInterface)getDelegate()).userDoubleClickedFile(item);
+    }
 
 }
 public  void    mouseEntered( MouseEvent e ){}
@@ -2629,7 +2437,12 @@ public  class   GBPLoginPanelActionListener implements ActionListener
         {
             n = new GBookmark( "somehost.com", null, null, null, 0, GBookmark.G_UNKNOWN_PROTOCOL );
         }else{
-            n = currentBookmark;
+            // fill in a copy first - if the user typed a different server over a (failed) bookmark
+            // we must not edit the saved bookmark
+            n = new GBookmark( currentBookmark );
+            n.setLocalHomePath( currentBookmark.getLocalHomePath() );
+            n.setNeverSavePassword( currentBookmark.getNeverSavePassword() );
+            n.setMaxConcurrentTransfers( currentBookmark.getMaxConcurrentTransfers() );
         }
 
         if( GideonConfiguration.DEBUG_BROWSERPANEL ) System.out.println("LoginPanelActionListener->actionPerformed");
@@ -2638,6 +2451,20 @@ public  class   GBPLoginPanelActionListener implements ActionListener
         GConnectionPanelInterface activePanel = lpal.getActiveConnectionPanel();
         if (activePanel != null) {
             activePanel.applyToBookmark(n);
+        }
+
+        if( currentBookmark != null )
+        {
+            if( isSameServer( n, currentBookmark ) )
+            {
+                // a retry of the same bookmark - keep using it (and its connection)
+                if (activePanel != null) activePanel.applyToBookmark(currentBookmark);
+                n = currentBookmark;
+            }else{
+                // the old connection's protocol plugin was fixed when it was created -
+                // drop it so connectForBookmark() builds a new one from the copy
+                lpal.setConnection(null);
+            }
         }
 
         if( GideonConfiguration.DEBUG_BROWSERPANEL )
@@ -2655,6 +2482,15 @@ public  class   GBPLoginPanelActionListener implements ActionListener
 
     }
 
+}
+
+/** True when both bookmarks point at the same server (protocol, host, port and user). */
+static boolean isSameServer( GBookmark a, GBookmark b )
+{
+    return a.getProtocol() == b.getProtocol()
+        && a.getPort() == b.getPort()
+        && Objects.equals( a.getUsername(), b.getUsername() )
+        && ( a.getHostname() == null ? b.getHostname() == null : a.getHostname().equalsIgnoreCase( b.getHostname() ) );
 }
 
 

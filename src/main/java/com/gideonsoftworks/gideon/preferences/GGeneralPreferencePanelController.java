@@ -20,7 +20,6 @@ public class GGeneralPreferencePanelController extends GGideonPanelController im
 {
     // Declare beans.
     private JButton choose;
-    private JCheckBox showDotFiles;
     private JTextField bean2;
 
     public GGeneralPreferencePanelController()
@@ -30,13 +29,6 @@ public class GGeneralPreferencePanelController extends GGideonPanelController im
         JPanel panel = new JPanel(new BorderLayout(0, 10));
         panel.setBorder(BorderFactory.createEmptyBorder(8, 15, 10, 15));
         panel.setPreferredSize(new Dimension(420, 170));
-
-        // Checkboxes panel (top)
-        JPanel checkboxPanel = new JPanel();
-        checkboxPanel.setLayout(new BoxLayout(checkboxPanel, BoxLayout.Y_AXIS));
-
-        showDotFiles = new JCheckBox("Show files starting with \".\"");
-        checkboxPanel.add(showDotFiles);
 
         // Downloads Folder group box
         JPanel defaultHomeBox = new JPanel(new BorderLayout(0, 4));
@@ -56,16 +48,8 @@ public class GGeneralPreferencePanelController extends GGideonPanelController im
         // NORTH (not CENTER) so the field/button keep their natural height instead of expanding to fill.
         defaultHomeBox.add(browseRow, BorderLayout.NORTH);
 
-        // Stack the checkboxes + downloads box at the top; CENTER absorbs the slack.
-        JPanel north = new JPanel();
-        north.setLayout(new BoxLayout(north, BoxLayout.Y_AXIS));
-        checkboxPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        defaultHomeBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-        north.add(checkboxPanel);
-        north.add(Box.createVerticalStrut(10));
-        north.add(defaultHomeBox);
-
-        panel.add(north, BorderLayout.NORTH);
+        // Downloads box at the top; CENTER absorbs the slack.
+        panel.add(defaultHomeBox, BorderLayout.NORTH);
 
         // wire us up
         choose.addActionListener(this);
@@ -78,14 +62,11 @@ public class GGeneralPreferencePanelController extends GGideonPanelController im
     {
 
         bean2.setText(GSFTPPreferences.defaultLocalHomeFolder());
-        showDotFiles.setSelected(GSFTPPreferences.showDotFiles());
 
     }
 
     public void save()
     {
-
-        GSFTPPreferences.setShowDotFiles(showDotFiles.isSelected());
 
         // save the path
         String path = bean2.getText();

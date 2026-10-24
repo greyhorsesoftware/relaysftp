@@ -86,6 +86,7 @@ public final class GLocalized {
         public static final String  CANCEL;
         public static final String  REFRESH;
         public static final String  DISCONNECT;
+        public static final String  SHOW_HIDDEN_FILES;
         public static final String  OPTIONS;
 
 
@@ -364,9 +365,6 @@ public final class GLocalized {
         
 
         // Browser toolbar icons
-        public static final ImageIcon PWD_ICON;
-        public static final ImageIcon RELOAD_SM_ICON;
-        public static final ImageIcon FAVORITES_ICON;
 
         // Activity panel icons
         public static final FlatSVGIcon ACTIVITY_CANCEL_ICON;
@@ -463,7 +461,6 @@ public final class GLocalized {
         public static final String SET_HOME_FOLDER;
         public static final String ADDFAVORITE_BOOKMARK;        
         public static final String FAVORITEFOLDERTABTITLE;
-        public static final String NOFAVORITES;
         public static final String CLOSE_TAB;
         
         public static final boolean	onMacOSX;
@@ -503,7 +500,6 @@ public final class GLocalized {
                 }
                 
                 CLOSE_TAB = getString(STRING_BUNDLE, "CLOSE_TAB");
-                NOFAVORITES = getString(STRING_BUNDLE, "NOFAVORITES");
                 ADD = getString(STRING_BUNDLE, "ADD");
                 ENTERCOMPLETEPATH = getString(STRING_BUNDLE, "ENTERCOMPLETEPATH");
                 PATH = getString(STRING_BUNDLE, "PATH");
@@ -703,6 +699,7 @@ public final class GLocalized {
                 CANCEL = getString(STRING_BUNDLE, "smCancel");  
                 REFRESH = getString(STRING_BUNDLE, "smRefresh"); 
                 DISCONNECT = getString(STRING_BUNDLE, "smDisconnect"); 
+                SHOW_HIDDEN_FILES = getString(STRING_BUNDLE, "smShowHiddenFiles");
                 
                 OPTIONS = getString(STRING_BUNDLE, "smOptions"); 
                 
@@ -875,9 +872,6 @@ public final class GLocalized {
                 
 
                 // Browser toolbar icons
-                PWD_ICON = getScaledIcon("pwd.png", 20, 20);
-                RELOAD_SM_ICON = getScaledIcon("reload.png", 20, 20);
-                FAVORITES_ICON = getScaledIcon("favorites.png", 20, 20);
 
                 // Activity panel icons
                 // Theme-aware (tinted to Button.foreground) so they stay visible in dark mode
